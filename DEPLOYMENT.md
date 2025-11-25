@@ -179,9 +179,36 @@ If something doesn't work, check:
 - Verify your API key is correct
 - Check if you have credits (free models work without credits)
 
-### "CORS errors"
+### "CORS errors" / Double slash in URLs
+- Check that `VITE_API_URL` doesn't end with `/` (should be `https://your-backend.vercel.app` not `https://your-backend.vercel.app/`)
 - Make sure backend allows frontend origin
-- Check `VITE_API_URL` is set correctly
+- Check browser network tab for the exact failing URL
+
+### "500 FUNCTION_INVOCATION_FAILED" on Vercel
+1. Check Vercel function logs:
+   - Go to your project dashboard
+   - Click "Functions" tab  
+   - Click on failed function to see logs
+2. Common issues:
+   - Missing environment variables
+   - Import errors (missing dependencies in requirements.txt)
+   - MongoDB connection timeout
+3. Test the root endpoint: `https://your-backend.vercel.app/` should return JSON with status
 
 ### "JWT errors"
 - Make sure `SECRET_KEY` is the same in all environments
+
+### Quick Health Check
+Visit `https://your-backend.vercel.app/` - you should see:
+```json
+{
+  "message": "ChefBuddy Recipe Generator API is running!",
+  "serverless": true,
+  "mongodb": true,
+  "env_vars": {
+    "VERCEL": "1",
+    "OPENROUTER_API_KEY": "set",
+    "MONGODB_URI": "set"
+  }
+}
+```

@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorClient
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 from contextlib import asynccontextmanager
 import os
@@ -13,6 +11,9 @@ import urllib.parse
 
 # Load .env variables FIRST before any other imports that need env vars
 load_dotenv()
+
+# Check if running in serverless environment (Vercel)
+IS_SERVERLESS = os.getenv("VERCEL") == "1" or os.getenv("AWS_LAMBDA_FUNCTION_NAME") is not None
 
 # Import expiry prediction modules
 from utils.predict_expiry import predict_expiry, calculate_days_left
@@ -26,48 +27,79 @@ from utils.auth import get_password_hash, verify_password, create_access_token, 
 # In-memory storage for development (replace with MongoDB for production)
 USE_MONGODB = os.getenv("USE_MONGODB", "false").lower() == "true"
 
-if USE_MONGODB:
-    # MongoDB setup
-    MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-    mongo_client = AsyncIOMotorClient(MONGODB_URI)
-    db = mongo_client.ChefBuddy_db
-    items_collection = db.food_items
-    users_collection = db.users
-else:
-    # In-memory storage
-    items_collection = None
-    users_collection = None
-    food_items_db = {}  # Simple dict: {id: item}
-    users_db = {}  # Simple dict: {email: user}
-    item_counter = {"count": 0}
+# MongoDB setup - lazy initialization for serverless
+mongo_client = None
+db = None
+items_collection = None
+users_collection = None
 
-# Scheduler for daily expiry checks
-scheduler = AsyncIOScheduler()
+# In-memory storage (for non-MongoDB mode)
+food_items_db = {}
+users_db = {}
+item_counter = {"count": 0}
+
+def get_mongo_client():
+    """Lazy initialization of MongoDB client"""
+    global mongo_client, db, items_collection, users_collection
+    if USE_MONGODB and mongo_client is None:
+        from motor.motor_asyncio import AsyncIOMotorClient
+        MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+        mongo_client = AsyncIOMotorClient(MONGODB_URI)
+        db = mongo_client.ChefBuddy_db
+        items_collection = db.food_items
+        users_collection = db.users
+    return mongo_client
+
+def get_collections():
+    """Get MongoDB collections with lazy initialization"""
+    if USE_MONGODB:
+        get_mongo_client()
+        return items_collection, users_collection
+    return None, None
+
+# Initialize on first request for serverless
+if USE_MONGODB and not IS_SERVERLESS:
+    get_mongo_client()
+
+# Scheduler for daily expiry checks (only in non-serverless mode)
+scheduler = None
+if not IS_SERVERLESS:
+    try:
+        from apscheduler.schedulers.asyncio import AsyncIOScheduler
+        scheduler = AsyncIOScheduler()
+    except ImportError:
+        pass
 
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    scheduler.add_job(check_expiring_items, 'cron', hour=8, minute=0)
-    scheduler.start()
-    print("✓ Scheduler started - Daily expiry checks enabled")
+    if scheduler:
+        scheduler.add_job(check_expiring_items, 'cron', hour=8, minute=0)
+        scheduler.start()
+        print("✓ Scheduler started - Daily expiry checks enabled")
     print("✓ ChefBuddy Backend is ready!")
     yield
     # Shutdown
-    scheduler.shutdown()
-    if USE_MONGODB:
+    if scheduler:
+        scheduler.shutdown()
+    if mongo_client:
         mongo_client.close()
     print("✓ Server shutdown complete")
 
-app = FastAPI(
-    title="ChefBuddy Recipe Generator API",
-    lifespan=lifespan
-)
+# Create app with or without lifespan based on environment
+if IS_SERVERLESS:
+    app = FastAPI(title="ChefBuddy Recipe Generator API")
+else:
+    app = FastAPI(
+        title="ChefBuddy Recipe Generator API",
+        lifespan=lifespan
+    )
 
-# Enable CORS for frontend
+# Enable CORS for frontend - Allow all origins for now
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # You can restrict later
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -110,7 +142,16 @@ class RecipeResponse(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "ChefBuddy Recipe Generator API is running!"}
+    return {
+        "message": "ChefBuddy Recipe Generator API is running!",
+        "serverless": IS_SERVERLESS,
+        "mongodb": USE_MONGODB,
+        "env_vars": {
+            "VERCEL": os.getenv("VERCEL", "not set"),
+            "OPENROUTER_API_KEY": "set" if os.getenv("OPENROUTER_API_KEY") else "not set",
+            "MONGODB_URI": "set" if os.getenv("MONGODB_URI") else "not set"
+        }
+    }
 
 
 # ========================================
@@ -121,9 +162,12 @@ async def root():
 async def register_user(user_data: UserCreate):
     """Register a new user."""
     try:
+        # Get collections with lazy initialization
+        items_coll, users_coll = get_collections()
+        
         # Check if user already exists
         if USE_MONGODB:
-            existing_user = await users_collection.find_one({"email": user_data.email})
+            existing_user = await users_coll.find_one({"email": user_data.email})
         else:
             existing_user = users_db.get(user_data.email)
         
@@ -147,7 +191,7 @@ async def register_user(user_data: UserCreate):
         }
         
         if USE_MONGODB:
-            await users_collection.insert_one(user_dict)
+            await users_coll.insert_one(user_dict)
         else:
             users_db[user_data.email] = user_dict
         
@@ -176,9 +220,12 @@ async def register_user(user_data: UserCreate):
 async def login_user(credentials: UserLogin):
     """Login user and return JWT token."""
     try:
+        # Get collections with lazy initialization
+        items_coll, users_coll = get_collections()
+        
         # Find user
         if USE_MONGODB:
-            user = await users_collection.find_one({"email": credentials.email})
+            user = await users_coll.find_one({"email": credentials.email})
         else:
             user = users_db.get(credentials.email)
         
