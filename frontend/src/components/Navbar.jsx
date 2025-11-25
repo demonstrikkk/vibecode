@@ -6,14 +6,6 @@ export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const token = localStorage.getItem('auth_token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-
-  const logout = () => {
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user')
-    navigate('/')
-  }
 
   const navLinks = [
     { to: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -52,26 +44,10 @@ export default function Navbar() {
 
         {/* User Menu */}
         <div className="navbar-user desktop-nav">
-          {token ? (
-            <>
-              <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
-                <User size={18} />
-                <span>{user.name || 'Profile'}</span>
-              </Link>
-              <Link to="/preferences" className={`nav-link ${isActive('/preferences') ? 'active' : ''}`}>
-                <Settings size={18} />
-              </Link>
-              <button onClick={logout} className="btn-logout">
-                <LogOut size={18} />
-                <span>Logout</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="nav-link">Login</Link>
-              <Link to="/register" className="btn-primary-sm">Sign Up</Link>
-            </>
-          )}
+          <Link to="/profile" className={`nav-link ${isActive('/profile') ? 'active' : ''}`}>
+            <User size={18} />
+            <span>Welcome, User!</span>
+          </Link>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -99,50 +75,14 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="mobile-divider" />
-          {token ? (
-            <>
-              <Link
-                to="/profile"
-                className={`mobile-nav-link ${isActive('/profile') ? 'active' : ''}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <User size={20} />
-                <span>Profile</span>
-              </Link>
-              <Link
-                to="/preferences"
-                className={`mobile-nav-link ${isActive('/preferences') ? 'active' : ''}`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Settings size={20} />
-                <span>Preferences</span>
-              </Link>
-              <button
-                onClick={() => { logout(); setMobileMenuOpen(false); }}
-                className="mobile-nav-link logout"
-              >
-                <LogOut size={20} />
-                <span>Logout</span>
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="mobile-nav-link"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="mobile-nav-link signup"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Sign Up Free
-              </Link>
-            </>
-          )}
+          <Link
+            to="/profile"
+            className={`mobile-nav-link ${isActive('/profile') ? 'active' : ''}`}
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <User size={20} />
+            <span>Profile</span>
+          </Link>
         </nav>
       </div>
     </header>

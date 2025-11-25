@@ -1,82 +1,52 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../config/api';
+import React, { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Check for stored token on mount
-        const storedToken = localStorage.getItem('auth_token');
-        const storedUser = localStorage.getItem('user');
-
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            try {
-                setUser(JSON.parse(storedUser));
-            } catch (e) {
-                console.error("Failed to parse user from local storage", e);
-            }
+    // Mock user data - no real authentication needed
+    const [user, setUser] = useState({
+        email: 'user@chefbuddy.com',
+        full_name: 'Guest User',
+        preferences: {
+            dietary_preferences: [],
+            dietary_restrictions: [],
+            household_size: 1
         }
-        setLoading(false);
-    }, []);
+    });
+    
+    // Mock token for API calls
+    const [token] = useState('mock-token');
+    const [loading] = useState(false);
 
-    const login = async (email, password) => {
-        try {
-            const response = await fetch(api.login, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Login failed');
-            }
-
-            const data = await response.json();
-
-            setToken(data.access_token);
-            setUser(data.user);
-
-            localStorage.setItem('auth_token', data.access_token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-        } catch (error) {
-            throw error;
-        }
+    // Mock update preferences function
+    const updatePreferences = (newPreferences) => {
+        setUser(prev => ({
+            ...prev,
+            preferences: { ...prev.preferences, ...newPreferences }
+        }));
     };
 
-    const register = async (userData) => {
-        try {
-            const response = await fetch(api.register, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Registration failed');
-            }
-
-            const data = await response.json();
-
-            setToken(data.access_token);
-            setUser(data.user);
-
-            localStorage.setItem('auth_token', data.access_token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-        } catch (error) {
-            throw error;
-        }
+    const value = {
+        user,
+        token,
+        loading,
+        updatePreferences,
+        // These functions are no longer used but kept for compatibility
+        login: async () => {},
+        register: async () => {},
+        logout: () => {},
     };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within AuthProvider');
+    }
+    return context;
+};
 
     const logout = () => {
         setToken(null);
