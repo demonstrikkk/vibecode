@@ -78,12 +78,10 @@ export default function Recipes() {
   const handleGenerateAI = async () => {
     setGenerating(true);
     try {
-      const token = localStorage.getItem('auth_token');
       const response = await fetch(api.generateRecipe, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           dietary_type: user?.preferences?.dietary_preferences?.[0] || "Balanced",
@@ -95,7 +93,10 @@ export default function Recipes() {
         })
       });
 
-      if (!response.ok) throw new Error('Generation failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Generation failed');
+      }
 
       const data = await response.json();
       const aiRecipe = {

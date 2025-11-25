@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
+import api from '../config/api';
 
 const ExpiryForm = ({ onAdded }) => {
   const [name, setName] = useState('');
@@ -27,7 +28,7 @@ const ExpiryForm = ({ onAdded }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/expiry/items', {
+      const response = await fetch(api.expiryItems, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

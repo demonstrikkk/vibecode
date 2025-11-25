@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, AlertTriangle, CheckCircle, Trash2, Lightbulb, Loader2 } from 'lucide-react';
+import api from '../config/api';
 
 // Component to format AI response with markdown-like styling
 const FormattedAIResponse = ({ text }) => {
@@ -174,9 +175,13 @@ const ExpiryList = () => {
 
   const deleteItem = async (itemId) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
+    if (!itemId || itemId === 'undefined') {
+      alert('Invalid item ID');
+      return;
+    }
 
     try {
-      await fetch(`/api/expiry/items/${itemId}`, { method: 'DELETE' });
+      await fetch(api.expiryItemById(itemId), { method: 'DELETE' });
       fetchItems();
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -185,11 +190,18 @@ const ExpiryList = () => {
   };
 
   const getAdvice = async (itemId, itemName) => {
+    if (!itemId || itemId === 'undefined') {
+      alert('Invalid item ID');
+      return;
+    }
     setAdviceLoading(itemId);
     try {
-      const response = await fetch(`/api/expiry/items/${itemId}/advice`, {
+      const response = await fetch(api.expiryItemAdvice(itemId), {
         method: 'POST',
       });
+      if (!response.ok) {
+        throw new Error(`Failed to get advice: ${response.status}`);
+      }
       const data = await response.json();
       setSelectedAdvice({
         itemName,
@@ -254,7 +266,7 @@ const ExpiryList = () => {
         <div className="space-y-3">
           {items.map((item) => (
             <div
-              key={item._id}
+              key={item.id || item._id}
               className={`rounded-lg border-2 p-4 transition-all ${getUrgencyColor(
                 item.daysLeft
               )}`}
@@ -300,11 +312,11 @@ const ExpiryList = () => {
                   {/* Action Buttons */}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => getAdvice(item._id, item.name)}
-                      disabled={adviceLoading === item._id}
+                      onClick={() => getAdvice(item.id || item._id, item.name)}
+                      disabled={adviceLoading === (item.id || item._id)}
                       className="flex items-center gap-1 text-sm px-3 py-1.5 bg-white/80 hover:bg-white rounded-lg font-semibold transition-colors disabled:opacity-50"
                     >
-                      {adviceLoading === item._id ? (
+                      {adviceLoading === (item.id || item._id) ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Loading...
@@ -318,7 +330,7 @@ const ExpiryList = () => {
                     </button>
 
                     <button
-                      onClick={() => deleteItem(item._id)}
+                      onClick={() => deleteItem(item.id || item._id)}
                       className="flex items-center gap-1 text-sm px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-800 rounded-lg font-semibold transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />

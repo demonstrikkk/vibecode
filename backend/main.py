@@ -343,26 +343,33 @@ async def delete_item(item_id: str):
 # ========================================
 
 @app.post("/api/generate-recipe")
-async def generate_recipe_from_query(
-    query_data: RecipeQuery,
-    preferences: Optional[RecipePreferences] = None
-):
+async def generate_recipe_from_query(request_data: dict):
     """
-    Generate a recipe from a natural language query.
-    Optionally accepts user preferences for personalized recommendations.
+    Generate a recipe from preferences or query.
+    Accepts either: {query: str, preferences?: {...}} OR just preferences object
     """
     try:
+        # Check if this is a direct preferences object or query format
+        if "dietary_type" in request_data:
+            # Direct preferences format from Recipes.jsx
+            preferences = request_data
+            query_text = f"Generate a recipe for {preferences.get('food_category', 'main course')}"
+        else:
+            # Query format with optional preferences
+            query_text = request_data.get("query", "Generate a healthy recipe")
+            preferences = request_data.get("preferences", {})
+        
         # Use provided preferences or empty defaults
         dietary_context = ""
         if preferences:
-            if preferences.dietary_type and preferences.dietary_type != "None":
-                dietary_context += f"\nDietary preference: {preferences.dietary_type}"
-            if preferences.cuisine_type and preferences.cuisine_type != "None":
-                dietary_context += f"\nCuisine type: {preferences.cuisine_type}"
-            if preferences.food_category and preferences.food_category != "None":
-                dietary_context += f"\nFood category: {preferences.food_category}"
-            if preferences.difficulty and preferences.difficulty != "None":
-                dietary_context += f"\nDifficulty level: {preferences.difficulty}"
+            if preferences.get("dietary_type") and preferences.get("dietary_type") != "None":
+                dietary_context += f"\nDietary preference: {preferences['dietary_type']}"
+            if preferences.get("cuisine_type") and preferences.get("cuisine_type") != "None":
+                dietary_context += f"\nCuisine type: {preferences['cuisine_type']}"
+            if preferences.get("food_category") and preferences.get("food_category") != "None":
+                dietary_context += f"\nFood category: {preferences['food_category']}"
+            if preferences.get("difficulty") and preferences.get("difficulty") != "None":
+                dietary_context += f"\nDifficulty level: {preferences['difficulty']}"
         
         # STRICT JSON PROMPT
         system_prompt = """You are a helpful chef assistant. Return ONLY valid JSON following EXACTLY this structure:
@@ -392,7 +399,7 @@ Rules:
 - Fill every field with meaningful content.
 - Include at least 5-8 ingredients and 4-6 steps."""
 
-        user_prompt = f"""Generate a recipe based on this request: {query_data.query}
+        user_prompt = f"""Generate a recipe based on this request: {query_text}
 {dietary_context}
 
 Return a complete recipe in the JSON format specified."""
