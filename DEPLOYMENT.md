@@ -192,6 +192,7 @@ If something doesn't work, check:
 2. Common issues:
    - Missing environment variables
    - Import errors (missing dependencies in requirements.txt)
+   - **EMAIL VALIDATOR ERROR**: `ModuleNotFoundError: No module named 'email_validator'` - Fixed by adding `email-validator==2.1.0` to requirements.txt
    - MongoDB connection timeout
 3. Test the root endpoint: `https://your-backend.vercel.app/` should return JSON with status
 
