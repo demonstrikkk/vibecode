@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Home, Book, Calendar, ShoppingBag, Refrigerator as PantryIcon, Menu, X, ChefHat, User, LogOut, Settings, Sparkles, Clock } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Home, Book, Calendar, ShoppingBag, Refrigerator as PantryIcon, Menu, X, ChefHat, User, Sparkles, Clock } from 'lucide-react'
 
 export default function Navbar() {
-  const navigate = useNavigate()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
