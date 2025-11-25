@@ -24,8 +24,8 @@ from models.food_item import FoodItemCreate, FoodItem, FoodItemWithPrediction
 from models.user import UserCreate, UserLogin, UserResponse, Token, UserPreferences, UserInDB
 from utils.auth import get_password_hash, verify_password, create_access_token, get_current_user_email
 
-# In-memory storage for development (replace with MongoDB for production)
-USE_MONGODB = os.getenv("USE_MONGODB", "false").lower() == "true"
+# In-memory storage mode (MongoDB disabled for Vercel deployment)
+USE_MONGODB = False  # Disabled to avoid MongoDB connection issues
 
 # MongoDB setup - lazy initialization for serverless
 mongo_client = None
@@ -44,10 +44,19 @@ def get_mongo_client():
     if USE_MONGODB and mongo_client is None:
         from motor.motor_asyncio import AsyncIOMotorClient
         MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-        mongo_client = AsyncIOMotorClient(MONGODB_URI)
-        db = mongo_client.ChefBuddy_db
-        items_collection = db.food_items
-        users_collection = db.users
+        
+        # Debug logging
+        print(f"Connecting to MongoDB with URI: {MONGODB_URI[:50]}...")
+        
+        try:
+            mongo_client = AsyncIOMotorClient(MONGODB_URI)
+            db = mongo_client.ChefBuddy_db
+            items_collection = db.food_items
+            users_collection = db.users
+            print("MongoDB client initialized successfully")
+        except Exception as e:
+            print(f"MongoDB connection error: {str(e)}")
+            raise e
     return mongo_client
 
 def get_collections():
@@ -58,17 +67,18 @@ def get_collections():
     return None, None
 
 # Initialize on first request for serverless
-if USE_MONGODB and not IS_SERVERLESS:
-    get_mongo_client()
+# Don't initialize MongoDB or scheduler in serverless/in-memory mode
+# if USE_MONGODB and not IS_SERVERLESS:
+#     get_mongo_client()
 
-# Scheduler for daily expiry checks (only in non-serverless mode)
+# Scheduler disabled for serverless deployment
 scheduler = None
-if not IS_SERVERLESS:
-    try:
-        from apscheduler.schedulers.asyncio import AsyncIOScheduler
-        scheduler = AsyncIOScheduler()
-    except ImportError:
-        pass
+# if not IS_SERVERLESS:
+#     try:
+#         from apscheduler.schedulers.asyncio import AsyncIOScheduler
+#         scheduler = AsyncIOScheduler()
+#     except ImportError:
+#         pass
 
 # Lifespan context manager for startup/shutdown events
 @asynccontextmanager
@@ -145,12 +155,24 @@ async def root():
     return {
         "message": "ChefBuddy Recipe Generator API is running!",
         "serverless": IS_SERVERLESS,
-        "mongodb": USE_MONGODB,
+        "storage_mode": "in-memory" if not USE_MONGODB else "mongodb",
+        "mongodb_disabled": True,
+        "note": "All data is stored in-memory and will be lost on server restart",
         "env_vars": {
             "VERCEL": os.getenv("VERCEL", "not set"),
-            "OPENROUTER_API_KEY": "set" if os.getenv("OPENROUTER_API_KEY") else "not set",
-            "MONGODB_URI": "set" if os.getenv("MONGODB_URI") else "not set"
+            "OPENROUTER_API_KEY": "set" if os.getenv("OPENROUTER_API_KEY") else "not set"
         }
+    }
+
+@app.get("/api/debug/storage")
+async def test_storage():
+    """Check storage mode and current data"""
+    return {
+        "storage_mode": "in-memory" if not USE_MONGODB else "mongodb",
+        "mongodb_enabled": USE_MONGODB,
+        "users_count": len(users_db),
+        "food_items_count": len(food_items_db),
+        "note": "Using in-memory storage - data persists only during server session"
     }
 
 

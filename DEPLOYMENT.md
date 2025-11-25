@@ -3,13 +3,18 @@
 ## 📋 Prerequisites
 
 1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
-2. **MongoDB Atlas Account**: Sign up at [mongodb.com/atlas](https://www.mongodb.com/atlas) (FREE tier available)
-3. **OpenRouter API Key**: Get from [openrouter.ai](https://openrouter.ai)
-4. **GitHub Account**: Push your code to GitHub
+2. **OpenRouter API Key**: Get from [openrouter.ai](https://openrouter.ai)
+3. **GitHub Account**: Push your code to GitHub
+
+**NOTE:** MongoDB has been **DISABLED** to avoid connection issues. The app now uses **in-memory storage**, which means:
+- ✅ No database setup required
+- ✅ Faster deployment
+- ⚠️ Data persists only during the server session
+- ⚠️ User data and food items will be reset on each deployment
 
 ---
 
-## 🗄️ Step 1: Set Up MongoDB Atlas (FREE)
+## 🔑 Step 1: Get OpenRouter API Key
 
 ### Create a Free Cluster:
 1. Go to [MongoDB Atlas](https://www.mongodb.com/atlas)
@@ -86,13 +91,13 @@ Go to your project → **Settings** → **Environment Variables** and add:
 | Variable | Value |
 |----------|-------|
 | `OPENROUTER_API_KEY` | `sk-or-v1-your-key-here` |
-| `MONGODB_URI` | `mongodb+srv://chefbuddy:yourpassword@cluster0.xxxxx.mongodb.net/chefbuddy_db?retryWrites=true&w=majority` |
-| `USE_MONGODB` | `true` |
 | `SECRET_KEY` | `your-super-secret-jwt-key-change-this-in-production-2025` |
+
+**Note:** MongoDB variables are no longer needed since we're using in-memory storage.
 
 ---
 
-## 🎨 Step 4: Deploy Frontend to Vercel
+## 🎨 Step 3: Deploy Frontend to Vercel
 
 1. Go to [vercel.com/new](https://vercel.com/new)
 2. Import the same repository again (or create new project)
@@ -190,15 +195,18 @@ If something doesn't work, check:
    - Click "Functions" tab  
    - Click on failed function to see logs
 2. Common issues:
-   - Missing environment variables
+   - Missing environment variables (especially `OPENROUTER_API_KEY` and `SECRET_KEY`)
    - Import errors (missing dependencies in requirements.txt)
    - **EMAIL VALIDATOR ERROR**: `ModuleNotFoundError: No module named 'email_validator'` - Fixed by adding `email-validator==2.1.0` to requirements.txt
-   - **PYMONGO COMPATIBILITY ERROR**: `cannot import name '_QUERY_OPTIONS' from 'pymongo.cursor'` - Fixed by updating Motor to 3.5.1 and pinning PyMongo to 4.8.0
-   - MongoDB connection timeout
 3. Test the root endpoint: `https://your-backend.vercel.app/` should return JSON with status
 
 ### "JWT errors"
 - Make sure `SECRET_KEY` is the same in all environments
+
+### "Data not persisting"
+- **This is expected!** The app uses in-memory storage
+- All user accounts and food items are cleared on server restart
+- Data persists only during your session
 
 ### Quick Health Check
 Visit `https://your-backend.vercel.app/` - you should see:
@@ -206,8 +214,10 @@ Visit `https://your-backend.vercel.app/` - you should see:
 {
   "message": "ChefBuddy Recipe Generator API is running!",
   "serverless": true,
-  "mongodb": true,
-  "env_vars": {
+  "storage_mode": "in-memory",
+  "mongodb_disabled": true,
+  "note": "All data is stored in-memory and will be lost on server restart"
+}
     "VERCEL": "1",
     "OPENROUTER_API_KEY": "set",
     "MONGODB_URI": "set"
