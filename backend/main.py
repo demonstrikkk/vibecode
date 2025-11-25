@@ -5,6 +5,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from datetime import datetime
 from contextlib import asynccontextmanager
+from typing import Optional
 import os
 import json
 import urllib.parse
@@ -642,29 +643,24 @@ async def delete_item(item_id: str):
 @app.post("/api/generate-recipe")
 async def generate_recipe_from_query(
     query_data: RecipeQuery,
-    email: str = Depends(get_current_user_email)
+    preferences: Optional[RecipePreferences] = None
 ):
     """
     Generate a recipe from a natural language query.
-    Authenticated users get personalized recommendations based on their preferences.
+    Optionally accepts user preferences for personalized recommendations.
     """
     try:
-        # Get user's saved preferences
-        if USE_MONGODB:
-            user = await users_collection.find_one({"email": email})
-        else:
-            user = users_db.get(email)
-        
-        user_prefs = user.get("preferences", {}) if user else {}
-        
-        # Enhance prompt with user preferences
+        # Use provided preferences or empty defaults
         dietary_context = ""
-        if user_prefs.get("dietary_preferences"):
-            dietary_context += f"\nUser follows: {', '.join(user_prefs['dietary_preferences'])}"
-        if user_prefs.get("dietary_restrictions"):
-            dietary_context += f"\nUser has restrictions: {', '.join(user_prefs['dietary_restrictions'])}"
-        if user_prefs.get("health_goals"):
-            dietary_context += f"\nUser's health goals: {', '.join(user_prefs['health_goals'])}"
+        if preferences:
+            if preferences.dietary_type and preferences.dietary_type != "None":
+                dietary_context += f"\nDietary preference: {preferences.dietary_type}"
+            if preferences.cuisine_type and preferences.cuisine_type != "None":
+                dietary_context += f"\nCuisine type: {preferences.cuisine_type}"
+            if preferences.food_category and preferences.food_category != "None":
+                dietary_context += f"\nFood category: {preferences.food_category}"
+            if preferences.difficulty and preferences.difficulty != "None":
+                dietary_context += f"\nDifficulty level: {preferences.difficulty}"
         
         # STRICT JSON PROMPT
         system_prompt = """
@@ -751,30 +747,23 @@ Return a complete recipe in the JSON format specified.
 
 @app.post("/api/generate-recipe-structured", response_model=RecipeResponse)
 async def generate_recipe_structured(
-    preferences: RecipePreferences,
-    email: str = Depends(get_current_user_email)
+    preferences: RecipePreferences
 ):
     """
     Generate a structured recipe JSON using OpenRouter.
-    Authenticated users get personalized recommendations based on their preferences.
+    Accepts user preferences directly in the request for personalized recommendations.
     """
     try:
-        # Get user's saved preferences
-        if USE_MONGODB:
-            user = await users_collection.find_one({"email": email})
-        else:
-            user = users_db.get(email)
-        
-        user_prefs = user.get("preferences", {}) if user else {}
-        
-        # Enhance prompt with user preferences
+        # Build dietary context from provided preferences
         dietary_context = ""
-        if user_prefs.get("dietary_preferences"):
-            dietary_context += f"\nUser follows: {', '.join(user_prefs['dietary_preferences'])}"
-        if user_prefs.get("dietary_restrictions"):
-            dietary_context += f"\nUser has restrictions: {', '.join(user_prefs['dietary_restrictions'])}"
-        if user_prefs.get("health_goals"):
-            dietary_context += f"\nUser's health goals: {', '.join(user_prefs['health_goals'])}"
+        if preferences.dietary_type and preferences.dietary_type != "None":
+            dietary_context += f"\nDietary preference: {preferences.dietary_type}"
+        if preferences.cuisine_type and preferences.cuisine_type != "None":
+            dietary_context += f"\nCuisine type: {preferences.cuisine_type}"
+        if preferences.food_category and preferences.food_category != "None":
+            dietary_context += f"\nFood category: {preferences.food_category}"
+        if preferences.difficulty and preferences.difficulty != "None":
+            dietary_context += f"\nDifficulty level: {preferences.difficulty}"
         
         # STRICT JSON PROMPT (Fixes UI issues)
         system_prompt = """
