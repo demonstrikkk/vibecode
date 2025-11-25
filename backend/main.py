@@ -39,15 +39,30 @@ users_db = {}
 item_counter = {"count": 0}
 
 def get_mongo_client():
-    """Lazy initialization of MongoDB client"""
+    """Lazy initialization of MongoDB client with proper error handling"""
     global mongo_client, db, items_collection, users_collection
     if USE_MONGODB and mongo_client is None:
         from motor.motor_asyncio import AsyncIOMotorClient
         MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-        mongo_client = AsyncIOMotorClient(MONGODB_URI)
-        db = mongo_client.ChefBuddy_db
-        items_collection = db.food_items
-        users_collection = db.users
+        
+        try:
+            # Create client with proper timeout settings for serverless
+            mongo_client = AsyncIOMotorClient(
+                MONGODB_URI,
+                serverSelectionTimeoutMS=5000,  # 5 seconds timeout
+                connectTimeoutMS=10000,  # 10 seconds connection timeout
+                socketTimeoutMS=10000,   # 10 seconds socket timeout
+                maxPoolSize=1,           # Limit connections for serverless
+            )
+            db = mongo_client.ChefBuddy_db
+            items_collection = db.food_items
+            users_collection = db.users
+        except Exception as e:
+            print(f"MongoDB connection error: {e}")
+            # Fallback to in-memory mode if connection fails
+            global USE_MONGODB
+            USE_MONGODB = False
+            return None
     return mongo_client
 
 def get_collections():
