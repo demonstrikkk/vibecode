@@ -13,8 +13,7 @@ export default function LandingPage() {
             <span>ChefBuddy</span>
           </div>
           <div className="nav-links">
-            <Link to="/login" className="btn-ghost">Login</Link>
-            <Link to="/register" className="btn-primary">Get Started</Link>
+            <Link to="/dashboard" className="btn-primary">Get Started</Link>
           </div>
         </nav>
         
@@ -30,11 +29,11 @@ export default function LandingPage() {
               available ingredients, and the time of day. Never wonder "what's for dinner" again.
             </p>
             <div className="hero-actions">
-              <Link to="/register" className="btn-primary btn-lg">
+              <Link to="/dashboard" className="btn-primary btn-lg">
                 <ChefHat size={20} />
                 Start Cooking Free
               </Link>
-              <Link to="/recipes" className="btn-outline btn-lg">
+              <Link to="/dashboard" className="btn-outline btn-lg">
                 Browse Recipes
               </Link>
             </div>
@@ -166,7 +165,7 @@ export default function LandingPage() {
           <div className="cta-content">
             <h2>Ready to Transform Your Cooking?</h2>
             <p>Join thousands of home cooks who've discovered their inner chef</p>
-            <Link to="/register" className="btn-primary btn-lg">
+            <Link to="/dashboard" className="btn-primary btn-lg">
               Get Started Free
             </Link>
           </div>

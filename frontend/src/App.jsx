@@ -9,6 +9,7 @@ import MealPlanner from './pages/MealPlanner';
 import ShoppingList from './pages/ShoppingList';
 import Pantry from './pages/Pantry';
 import Profile from './pages/Profile';
+import LandingPage from './pages/LandingPage';
 import FoodRecommendations from './pages/FoodRecommendations';
 import ExpiryRecommendations from './pages/ExpiryRecommendations';
 
@@ -28,8 +29,8 @@ function App() {
         <Router>
             <AuthProvider>
                 <Routes>
-                    {/* Landing page redirects to dashboard */}
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    {/* Landing page */}
+                    <Route path="/" element={<LandingPage />} />
                 
                 <Route
                     path="/dashboard"

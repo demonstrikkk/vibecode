@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }) => {
         token,
         loading,
         updatePreferences,
+        isAuthenticated: true, // Always authenticated
         // These functions are no longer used but kept for compatibility
         login: async () => {},
         register: async () => {},
@@ -47,59 +48,5 @@ export const useAuth = () => {
     }
     return context;
 };
-
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user');
-    };
-
-    const updatePreferences = async (preferences) => {
-        if (!token) {
-            throw new Error('Not authenticated');
-        }
-
-        try {
-            const response = await fetch(api.preferences, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(preferences),
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Failed to update preferences');
-            }
-
-            const data = await response.json();
-
-            // Update user with new preferences
-            if (user) {
-                const updatedUser = { ...user, preferences: data.preferences };
-                setUser(updatedUser);
-                localStorage.setItem('user', JSON.stringify(updatedUser));
-            }
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    const value = {
-        user,
-        setUser, // Added setUser to allow manual updates if needed
-        token,
-        login,
-        register,
-        logout,
-        updatePreferences,
-        isAuthenticated: !!token,
-        loading,
-    };
-
-    // return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 
 
