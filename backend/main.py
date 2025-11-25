@@ -309,10 +309,15 @@ async def get_current_user(email: str = Depends(get_current_user_email)):
 
 @app.put("/api/auth/preferences")
 async def update_user_preferences(
-    preferences: UserPreferences,
-    email: str = Depends(get_current_user_email)
+    preferences: UserPreferences
 ):
-    """Update user's dietary preferences."""
+    """Update user's dietary preferences (no-op in no-auth mode)."""
+    # In no-auth mode, preferences are handled client-side
+    return {
+        "success": True,
+        "message": "Preferences updated",
+        "preferences": preferences.model_dump()
+    }
     try:
         preferences_dict = preferences.dict()
         
@@ -493,38 +498,21 @@ async def generate_multi_item_recipe(request: MultiRecipeRequest):
     try:
         items = []
         
-        if USE_MONGODB:
-            from bson import ObjectId
-            for item_id in request.item_ids:
-                item = await items_collection.find_one({"_id": ObjectId(item_id)})
-                if item:
-                    prediction = predict_expiry(
-                        item["category"], 
-                        item["purchaseDate"],
-                        datetime.fromisoformat(item["manufacturedDate"]) if item.get("manufacturedDate") else None
-                    )
-                    days_left = calculate_days_left(prediction["safeExpiry"])
-                    items.append({
-                        "name": item["name"],
-                        "category": item["category"],
-                        "days_left": days_left
-                    })
-        else:
-            # In-memory storage
-            for item_id in request.item_ids:
-                if item_id in food_items_db:
-                    item = food_items_db[item_id]
-                    prediction = predict_expiry(
-                        item["category"], 
-                        item["purchaseDate"],
-                        datetime.fromisoformat(item["manufacturedDate"]) if item.get("manufacturedDate") else None
-                    )
-                    days_left = calculate_days_left(prediction["safeExpiry"])
-                    items.append({
-                        "name": item["name"],
-                        "category": item["category"],
-                        "days_left": days_left
-                    })
+        # In-memory storage only (MongoDB disabled)
+        for item_id in request.item_ids:
+            if item_id in food_items_db:
+                item = food_items_db[item_id]
+                prediction = predict_expiry(
+                    item["category"], 
+                    item["purchaseDate"],
+                    datetime.fromisoformat(item["manufacturedDate"]) if item.get("manufacturedDate") else None
+                )
+                days_left = calculate_days_left(prediction["safeExpiry"])
+                items.append({
+                    "name": item["name"],
+                    "category": item["category"],
+                    "days_left": days_left
+                })
         
         if not items:
             raise HTTPException(status_code=404, detail="No valid items found")
