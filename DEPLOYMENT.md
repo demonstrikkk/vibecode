@@ -194,33 +194,11 @@ If something doesn't work, check:
    - Import errors (missing dependencies in requirements.txt)
    - **EMAIL VALIDATOR ERROR**: `ModuleNotFoundError: No module named 'email_validator'` - Fixed by adding `email-validator==2.1.0` to requirements.txt
    - **PYMONGO COMPATIBILITY ERROR**: `cannot import name '_QUERY_OPTIONS' from 'pymongo.cursor'` - Fixed by updating Motor to 3.5.1 and pinning PyMongo to 4.8.0
-   - **MONGODB AUTH ERROR**: `bad auth : authentication failed` - Check MONGODB_URI format and credentials
    - MongoDB connection timeout
 3. Test the root endpoint: `https://your-backend.vercel.app/` should return JSON with status
 
 ### "JWT errors"
 - Make sure `SECRET_KEY` is the same in all environments
-
-### MongoDB Atlas Authentication Issues
-If you see `bad auth : authentication failed`:
-
-1. **Check your MONGODB_URI format** in Vercel environment variables:
-   ```
-   mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<database>?retryWrites=true&w=majority
-   ```
-
-2. **Verify MongoDB Atlas settings**:
-   - Go to MongoDB Atlas dashboard
-   - Check if your database user exists and password is correct
-   - Ensure IP whitelist includes `0.0.0.0/0` (for Vercel serverless functions)
-   - Database name should match what's in your connection string
-
-3. **Test connection locally** first:
-   - Copy MONGODB_URI from Vercel environment variables
-   - Test in your local environment
-   - If it works locally but not on Vercel, it's likely an IP restriction
-
-4. **Fallback behavior**: The app will automatically fall back to in-memory mode if MongoDB connection fails
 
 ### Quick Health Check
 Visit `https://your-backend.vercel.app/` - you should see:
