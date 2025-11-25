@@ -100,6 +100,6 @@ export const useAuth = () => {
         loading,
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    // return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 
 
