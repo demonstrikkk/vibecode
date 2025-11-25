@@ -193,6 +193,7 @@ If something doesn't work, check:
    - Missing environment variables
    - Import errors (missing dependencies in requirements.txt)
    - **EMAIL VALIDATOR ERROR**: `ModuleNotFoundError: No module named 'email_validator'` - Fixed by adding `email-validator==2.1.0` to requirements.txt
+   - **PYMONGO COMPATIBILITY ERROR**: `cannot import name '_QUERY_OPTIONS' from 'pymongo.cursor'` - Fixed by updating Motor to 3.5.1 and pinning PyMongo to 4.8.0
    - MongoDB connection timeout
 3. Test the root endpoint: `https://your-backend.vercel.app/` should return JSON with status
 
