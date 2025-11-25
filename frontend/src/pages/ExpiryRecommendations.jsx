@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import api from '../config/api';
 import {
   Clock,
   AlertTriangle,
@@ -32,7 +33,7 @@ const ExpiryRecommendations = () => {
 
   const fetchExpiringItems = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/expiry/items', {
+      const response = await fetch(api.expiryItems, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -80,7 +81,7 @@ const ExpiryRecommendations = () => {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/expiry/multi-recipe', {
+      const response = await fetch(api.multiRecipe, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const ExpiryRecommendations = () => {
   const getAdvice = async (itemId, itemName) => {
     setAdviceLoading(itemId);
     try {
-      const response = await fetch(`http://localhost:8000/api/expiry/items/${itemId}/advice`, {
+      const response = await fetch(api.expiryItemAdvice(itemId), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

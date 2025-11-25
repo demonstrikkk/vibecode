@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import RecipeModal from '../components/RecipeModal'
 import { addIngredients } from '../utils/shopping'
 import { useAuth } from '../context/AuthContext'
+import api from '../config/api'
 
 function RecipeCard({ r }) {
   const img = r.image_url || 'https://source.unsplash.com/800x600/?food'
@@ -78,7 +79,7 @@ export default function Recipes() {
     setGenerating(true);
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('http://localhost:8000/api/generate-recipe', {
+      const response = await fetch(api.generateRecipe, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

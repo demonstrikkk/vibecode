@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import api from '../config/api';
 import { 
   ChefHat, 
   Sparkles, 
@@ -68,7 +69,7 @@ const FoodRecommendations = () => {
         }
       }
 
-      const response = await fetch('http://localhost:8000/api/generate-recipe', {
+      const response = await fetch(api.generateRecipe, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

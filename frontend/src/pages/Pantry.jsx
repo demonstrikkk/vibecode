@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import styles from '../styles/App.module.css'
+import api from '../config/api'
 
 export default function Pantry() {
   const [items, setItems] = useState([])
@@ -13,7 +14,7 @@ export default function Pantry() {
 
   const fetchItems = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/expiry/items')
+      const res = await fetch(api.expiryItems)
       const data = await res.json()
       setItems(data)
     } catch (e) { console.error(e) }
@@ -22,7 +23,7 @@ export default function Pantry() {
   const add = async () => {
     if (!name) return
     try {
-      await fetch('http://localhost:8000/api/expiry/items', {
+      await fetch(api.expiryItems, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -40,14 +41,14 @@ export default function Pantry() {
 
   const remove = async (id) => {
     try {
-      await fetch(`http://localhost:8000/api/expiry/items/${id}`, { method: 'DELETE' })
+      await fetch(api.expiryItemById(id), { method: 'DELETE' })
       fetchItems()
     } catch (e) { console.error(e) }
   }
 
   const getAdvice = async (id) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/expiry/items/${id}/advice`, { method: 'POST' })
+      const res = await fetch(api.expiryItemAdvice(id), { method: 'POST' })
       const data = await res.json()
       alert(data.advice)
     } catch (e) { console.error(e) }
